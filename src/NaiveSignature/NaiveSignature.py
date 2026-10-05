@@ -75,13 +75,13 @@ class NaiveSignature(BaseSignature):
         else:
             message_hash = self.compute_hash(message)
 
-        for m_index, m in enumerate(message_hash):
-            for i in range(7, -1, -1):
-                current_index = m_index * 8 + (7 - i)
-                signature_bit = private_key.value[current_index].copy()
-                if (m >> i) & 1 == 1:
-                    signature_bit = self.compute_hash(signature_bit)
-                signature_data.append(signature_bit)
+        message_hash_list = message_hash.to_base(2)
+
+        for m_index, m in enumerate(message_hash_list):
+            signature_bit = private_key.value[m_index].copy()
+            if m == 1:
+                signature_bit = self.compute_hash(signature_bit)
+            signature_data.append(signature_bit)
 
         params_dict = {"_hash_name": self._hash_name,
                        "_hash_length_bytes": self._hash_length_bytes}
@@ -94,7 +94,7 @@ class NaiveSignature(BaseSignature):
 
 
     def verify(self,
-               signature: Signature,
+               signature: Signature | list["TaggedValue"],
                public_key: Key,
                message: Union[str, bytes, "TaggedValue"],
                already_hashed: bool = False):
@@ -105,7 +105,8 @@ class NaiveSignature(BaseSignature):
 
 
         Args:
-            signature: Signature Class that contains signature data
+            signature: Signature Class that contains signature data. Alternatively just list of TaggedValues without
+                        that Signature class wrapper
             public_key: public key to validate signature with
             message: message that was signed
             already_hashed: Should message be hashed (False), or already signed (True)?
@@ -123,13 +124,18 @@ class NaiveSignature(BaseSignature):
 
         verification_list = []
 
-        for m_index, m in enumerate(message_hash):
-            for i in range(7, -1, -1):
-                current_index = m_index * 8 + (7-i)
-                signature_bit = signature.signature[current_index].copy()
-                if (m >> i) & 1 == 0:
-                    signature_bit = self.compute_hash(signature_bit)
-                verification_list.append(signature_bit)
+        if isinstance(signature, Signature):
+            signature_data = signature.signature
+        else:
+            signature_data = signature
+
+        message_hash_list = message_hash.to_base(2)
+
+        for m_index, m in enumerate(message_hash_list):
+            signature_part = signature_data[m_index].copy()
+            if m  == 0:
+                signature_part = self.compute_hash(signature_part)
+            verification_list.append(signature_part)
 
         correct = True
         for i in range(self._hash_length_bytes*8):
@@ -220,9 +226,6 @@ class NaiveKeyPair(KeyPair):
         for i in private_key.value:
             if len(i) != self._hash_length_bytes:
                 return False
-
-        if private_key.params["hash_name"] != self.hash_name:
-            return False
 
         if private_key.params["hash_length_bytes"] != self._hash_length_bytes:
             return False

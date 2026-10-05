@@ -141,3 +141,61 @@ class TaggedValue:
         """
 
         return self.value[item]
+
+    def to_base(self,
+                base: int,
+                output_length: int = 0
+                ) -> list[int]:
+        """
+        Converts value into list of values of given base. Can be prepended by zeroes to specific length
+        given by output_length. If result is longer that output_length, output_length parameter is ignored.
+
+        Args:
+            base: base to convert value to
+            output_length: minimum output length
+
+        Returns:
+            list of integers representing value in given base
+        """
+
+        if not isinstance(base, int):
+            raise ValueError(f"Base: expected int, got: {type(base)}")
+
+        if base < 2:
+            raise ValueError(f"Cannot convert to base {base}")
+
+        if not isinstance(output_length, int):
+            raise ValueError(f"Output_length: expected int, got {type(output_length)}")
+
+        bigint = int.from_bytes(self.value)
+
+        result = []
+        if bigint == 0:
+            return [0]
+
+        while bigint > 0:
+            bigint, r = divmod(bigint, base)
+            result.append(r)
+
+        while len(result) < output_length:
+            result.append(0)
+
+        result.reverse()
+
+        return result
+
+    @classmethod
+    def from_base(cls,
+                  value_list: list[int],
+                  base: int,
+                  expected_length: int
+                  ) -> Self:
+
+        full_number = 0
+
+        max_inc = len(value_list)
+
+        for v in range(len(value_list)):
+            full_number += base**(max_inc-v-1) * value_list[v]
+
+        return cls(int.to_bytes(full_number, expected_length))
