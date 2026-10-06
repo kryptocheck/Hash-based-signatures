@@ -75,7 +75,7 @@ class NaiveSignature(BaseSignature):
         else:
             message_hash = self.compute_hash(message)
 
-        message_hash_list = message_hash.to_base(2)
+        message_hash_list = message_hash.to_base(2, 256)
 
         for m_index, m in enumerate(message_hash_list):
             signature_bit = private_key.value[m_index].copy()
@@ -129,7 +129,7 @@ class NaiveSignature(BaseSignature):
         else:
             signature_data = signature
 
-        message_hash_list = message_hash.to_base(2)
+        message_hash_list = message_hash.to_base(2,256)
 
         for m_index, m in enumerate(message_hash_list):
             signature_part = signature_data[m_index].copy()
@@ -143,6 +143,24 @@ class NaiveSignature(BaseSignature):
                 correct = False
 
         return correct
+
+    def _verify_signature(self,
+                          signature: "Signature"
+                          ) -> bool:
+        if isinstance(signature, Signature):
+            signature_data = signature.signature
+        else:
+            signature_data = signature
+
+        if len(signature_data) != self._hash_length_bytes * 8:
+            return False
+
+        for s in signature_data:
+            if len(s) != self._hash_length_bytes:
+                return False
+
+
+        return True
 
 class NaiveKeyPair(KeyPair):
     """

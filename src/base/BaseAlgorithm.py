@@ -119,6 +119,12 @@ class BaseSignature(HBUtils, ABC):
 
         pass
 
+    @abstractmethod
+    def _verify_signature(self,
+                          signature: "Signature"
+                          ) -> bool:
+        pass
+
 
 class KeyPair(HBUtils, ABC):
     """

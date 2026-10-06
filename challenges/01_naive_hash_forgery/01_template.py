@@ -8,6 +8,16 @@ if __name__ == "__main__":
     forged_signature = None
     forged_signed_hash = None
 
-    verification = alg.verify(forged_signature, keypair.public_key, forged_signed_hash, already_hashed=True)
-    print(f"Signature was verified: {verification}")
 
+
+
+
+
+    # Validate forged signature. We need to set already_hashed so algorithm won't hash our data again
+    verification = alg.verify(forged_signature, keypair.public_key, forged_signed_hash, already_hashed=True)
+
+    if forged_signed_hash == signatures[0].signed_hash:
+        verification = False
+        print("This is not forgery")
+
+    print(f"Signature was verified: {verification}")

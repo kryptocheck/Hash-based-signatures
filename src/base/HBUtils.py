@@ -203,3 +203,41 @@ class HBUtils:
             case _:
                 raise NotImplementedError(f"Unsupported type: {type(value)}")
 
+
+    @staticmethod
+    def get_minimums_in_lists(lists: list[list[int]]
+                              ) -> tuple[list[int], list[int]]:
+        """
+        Takes an arbitrary number of lists (in form of list of lists) of same length containing numbers and
+        for each position finds minimum and index of list where that minimum was hit. For index of list to change
+        there need to be new value LOWER than current one (ties go to first list where given number was found).
+
+        Args:
+            lists: List of lists of integers to compare
+
+        Returns:
+            2 value tuple - list of minimums and list containing indexes in which list was that minimum found.
+
+        Examples:
+            [[0,1,3,2],[3,6,1,2]] -> ([0,1,1,2],[0,0,1,0])
+            [[0,1,2,3],[0,1,2,3],[0,1,2,3]] -> ([0,1,2,3],[0,0,0,0])
+        """
+        if not lists:
+            return [], []
+
+        l_len = len(lists[0])
+        for l in lists:
+            if len(l) != l_len:
+                raise AttributeError(f"Can only compare lists of same length")
+
+        minimums = [10**100] * l_len
+        min_positions = [l_len] * l_len
+
+        for list_index, l in enumerate(lists):
+            for index, value in enumerate(l):
+                if value < minimums[index]:
+                    minimums[index] = value
+                    min_positions[index] = list_index
+
+        return minimums, min_positions
+
