@@ -241,3 +241,24 @@ class HBUtils:
 
         return minimums, min_positions
 
+    @staticmethod
+    def get_values_on_all_positions(lists: list[list[int]]
+                                    ) -> list[dict[int, list[int]]]:
+        if not lists:
+            return []
+
+        l_len = len(lists[0])
+        for l in lists:
+            if len(l) != l_len:
+                raise AttributeError(f"Can only compare lists of same length")
+
+        result = [{} for _ in range(l_len)]
+
+        for list_index, this_list in enumerate(lists):
+            for index, val in enumerate(this_list):
+                if val not in result[index]:
+                    result[index][val] = []
+
+                result[index][val].append(list_index)
+
+        return result

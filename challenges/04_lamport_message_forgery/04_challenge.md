@@ -1,4 +1,4 @@
-02_naive_message_forgery
+04_lamport_message_forgery
 =========================
 
 Now you will be actually creating forged signature of message in specific format.
@@ -15,9 +15,7 @@ with number "55555555".
 
 
 Tips:
-* you can use a,b = get_minimums_in_lists(list[list[int]]), that will return two lists - first list will contain 
-  the smallest number for each position in all lists, second will contain for each position index of list where 
-  that value was found
+
 
 
 Old tips:
@@ -28,3 +26,6 @@ Old tips:
 * use TaggedValue.from_base(value_list, base, expected_length) to convert list of integers of given base back to bytes
 * use signature = alg.sign(message, private_key) to generate signature
 * use verified = alg.verify(signature, public_key, message) to verify signature
+* you can use a,b = get_minimums_in_lists(list[list[int]]), that will return two lists - first list will contain 
+  the smallest number for each position in all lists, second will contain for each position index of list where 
+  that value was found

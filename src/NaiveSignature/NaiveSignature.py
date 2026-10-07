@@ -88,7 +88,7 @@ class NaiveSignature(BaseSignature):
 
         return Signature(signed_hash = message_hash,
                          signature = signature_data,
-                         algorithm = "Naive",
+                         algorithm = self.CLASS_NAME,
                          params = params_dict,
                          original_data = None if already_hashed else message)
 
@@ -145,8 +145,23 @@ class NaiveSignature(BaseSignature):
         return correct
 
     def _verify_signature(self,
-                          signature: "Signature"
+                          signature: Union ["Signature", list[bytes]]
                           ) -> bool:
+        """
+        Verifies that given Signature value is actually valid Naive signature.
+
+        VERIFIES ONLY STRUCTURE OF SIGNATURE, not signature itself.
+
+        Args:
+            signature:
+                either Signature class or just list of bytes representing Naive signature of compatible
+                parameters
+
+        Returns:
+            Result of verification
+
+        """
+
         if isinstance(signature, Signature):
             signature_data = signature.signature
         else:
@@ -203,12 +218,12 @@ class NaiveKeyPair(KeyPair):
                        "hash_length_bytes": self._hash_length_bytes}
 
         self.private_key = Key(is_private=True,
-                               algorithm="Naive",
+                               algorithm=self.CLASS_NAME,
                                params=params_dict,
                                value=private_key_value)
 
         self.public_key = Key(is_private=False,
-                              algorithm="Naive",
+                              algorithm=self.CLASS_NAME,
                               value=public_key_value,
                               params=params_dict,
                               sibling_key=self.private_key)

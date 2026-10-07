@@ -123,6 +123,19 @@ class BaseSignature(HBUtils, ABC):
     def _verify_signature(self,
                           signature: "Signature"
                           ) -> bool:
+        """
+        Verifies that given Signature value is actually valid signature for given algorithm.
+
+        VERIFIES ONLY STRUCTURE OF SIGNATURE, not signature itself.
+
+        Args:
+            signature:
+                Signature with compatible parameters
+
+        Returns:
+            Result of verification
+
+        """
         pass
 
 
