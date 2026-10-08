@@ -65,7 +65,7 @@ class HBUtils:
 
 
         Args:
-            hash_input: Can be either bytes or TaggedValue class.
+            hash_input: what to hash, can be either bytes or TaggedValue class.
 
         Returns:
             result in format of TaggedValue
@@ -82,6 +82,29 @@ class HBUtils:
             new_digest = value[:self._hash_length_bytes]
             tagged = TaggedValue(new_digest)
             return tagged
+
+
+    def compute_hashchain(self,
+                          hash_input: TaggedValue | bytes,
+                          iterations: int = 1
+                          ) -> TaggedValue:
+        """
+        Computes hashchain (hash of hash of hash of .... hash of message) of length given by
+        iterations.
+
+        Args:
+            hash_input: what to hash, can be either bytes or TaggedValue class.
+            iterations: how many times should be hashed; 0 returns non-hashed input, 1 is classic hash
+        Returns:
+            result in format of TaggedValue
+
+        """
+
+        for _ in range(iterations):
+            hash_input = self.compute_hash(hash_input)
+
+        return hash_input
+
 
     @staticmethod
     def generate_random(bytes_needed: int
@@ -244,6 +267,23 @@ class HBUtils:
     @staticmethod
     def get_values_on_all_positions(lists: list[list[int]]
                                     ) -> list[dict[int, list[int]]]:
+        """
+        Takes list of lists of integers of same length and for each position checks what values was used
+        and in what list (by index).
+
+
+        Args:
+            lists: List of lists of integers to compare
+
+        Returns:
+            List, that for each position contains dict, where key is used number and value is list of indexes where it
+            was found.
+
+        Examples:
+            [[0,1,3,2],[3,6,1,2]] -> [{0:[0],3:[1]},{1:[0], 6:[1]}, {3:[0], 1:[1]}, {2: [0,1]}]
+
+        """
+
         if not lists:
             return []
 
