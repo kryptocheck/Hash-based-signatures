@@ -3,6 +3,7 @@ import json
 from src.base.BaseAlgorithm import Signature
 from src.NaiveSignature.NaiveSignature import NaiveSignature, NaiveKeyPair
 from src.LamportSignature.LamportSignature import LamportSignature, LamportKeyPair
+from src.WinternitzSignature.WinternitzSignature import WinternitzSignature, WinternitzKeyPair
 
 def load_challenge(file_name):
     with open(file_name, "r") as f:
@@ -18,6 +19,10 @@ def load_challenge(file_name):
         case "Lamport":
             alg_primitive = LamportSignature
             kp_primitive = LamportKeyPair
+        case "Winternitz":
+            alg_primitive = WinternitzSignature
+            kp_primitive = WinternitzKeyPair
+
         case _ :
             raise NotImplementedError(f'Unknown class_name {challenge_data["algorithm"]["class_name"]}')
 

@@ -6,7 +6,7 @@ Now you will be actually creating forged signature of message in specific format
 Let's pretend I am payments processor. I am processing only data in this format:
 * "[source_account]|[target_account]|[amount]|[description]"
 
-* This whole message is then signed using Lamport's algorithm, but I am using the same keypair for all payments.
+* This whole message is then signed using Winternitz algorithm with w=2, but I am using the same keypair for all payments.
 
 I already processed 4 payments ( = created 4 signatures with the same key).
 

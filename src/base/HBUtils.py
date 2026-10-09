@@ -302,3 +302,40 @@ class HBUtils:
                 result[index][val].append(list_index)
 
         return result
+
+    @staticmethod
+    def convert_integer_to_base(bigint: int,
+                                base: int,
+                                output_length: int = 0
+                                ) -> list[int]:
+        """
+        Coverts positive integer into list of numbers representing that number in given base. Output length will
+        be prepended to minimum length, when output_length is provided.
+
+
+        Args:
+            bigint: Number in base 10 to convert
+            base: To what base should be converted
+            output_length: minimum output length
+
+        Returns:
+            converted number as list of integers
+
+        """
+        if not isinstance(bigint, int) or bigint < 0:
+            raise ValueError(f"Can only convert positive integer, not {bigint}")
+
+
+        result = []
+
+        if bigint == 0:
+            return [0]
+
+        while bigint > 0:
+            bigint, r = divmod(bigint, base)
+            result.append(r)
+
+        while len(result) < output_length:
+            result.append(0)
+
+        return result

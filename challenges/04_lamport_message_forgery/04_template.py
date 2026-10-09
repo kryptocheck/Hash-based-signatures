@@ -17,9 +17,10 @@ if __name__ == "__main__":
     verification = alg.verify(forged_signature, keypair.public_key, forged_message_template)
 
     # Check that you did not try just copying valid signature :)
-    if forgery_candidate_hash == signatures[0].signed_hash:
-        verification = False
-        print("This is not forgery")
+    for s in signatures:
+        if forgery_candidate_hash == s.signed_hash:
+            verification = False
+            print("This is not forgery")
 
     # Checks that forged message have proper format
     if forged_message_template.find(b'48652146|55555555|100|') != 0:

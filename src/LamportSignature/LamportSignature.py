@@ -79,8 +79,8 @@ class LamportSignature(BaseSignature):
             signature_bit = private_key.value[m][m_index].copy()
             signature_data.append(signature_bit)
 
-        params_dict = {"_hash_name": self._hash_name,
-                       "_hash_length_bytes": self._hash_length_bytes}
+        params_dict = {"algorithm": self._hash_name,
+                       "hash_length_bytes": self._hash_length_bytes}
 
         return Signature(signed_hash = message_hash,
                          signature = signature_data,

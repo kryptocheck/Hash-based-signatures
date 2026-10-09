@@ -1,27 +1,29 @@
 from src.base.BaseAlgorithm import BaseSignature, KeyPair, Key, Signature
 
-from typing import TYPE_CHECKING, Union
+from math import log2
+
+from typing import TYPE_CHECKING, Union, Any
 if TYPE_CHECKING:
     from src.base.TaggedValue import TaggedValue
 
-class NaiveSignature(BaseSignature):
+class WinternitzSignature(BaseSignature):
     """
-    Naive signature algorithm.
+    Winternitz signature algorithm.
 
     For algorithm description, see here:
-    https://kryptocheck.cz/podpisy-zalozene-na-hashich-i-zakladni-podpisovy-algoritmus/
-
-    THIS ALGORITHM IS NOT SECURE AND IT IS HERE ONLY TO SHOW BASIS ON WHAT NEXT ALGORITHM BUILT.
+    https://kryptocheck.cz/podpisy-zalozene-na-hashich-iii-uvod-do-winternitzova-jednorazoveho-podpisu/
+    https://kryptocheck.cz/podpisy-zalozene-na-hashich-iv-winternitzuv-podpisovy-algoritmus/
 
     FOR EDUCATIONAL PURPOSES ONLY, DO NOT USE IN PRODUCTION.
 
     """
 
-    CLASS_NAME = "Naive"
+    CLASS_NAME = "Winternitz"
 
     def __init__(self,
                  hash_name: str | None = None,
-                 truncate_to_bytes: int | None = None
+                 truncate_to_bytes: int | None = None,
+                 w: int = 256
                  ) -> None:
         """
         Initialization of instance of this algorithm.
@@ -29,22 +31,45 @@ class NaiveSignature(BaseSignature):
         Args:
             hash_name: name of hash algorithm that will be used
             truncate_to_bytes: Should hash output be truncated? if None, full length of hash output will be used
+            w: Winternitz parameter. ln(w) says how many bit are processed at once.
 
         """
 
         super().__init__(hash_name, truncate_to_bytes)
+        self.w = w
+
+        # l1 - length of first part of signature (how many parts is signature hash break into)
+        # l2 - length of second part of signature (checksum validation)
+        self._l1 = int(((self._hash_length_bytes * 8 - 1) // log2(self.w)) + 1)
+        self._l2 = int((log2(self._l1 * (self.w - 1)) // log2(self.w)) + 1)
+
+        # maximum possible sum of all l1 values
+        self.max_sum = (self.w - 1) * self._l1
+
+    def export_data(self
+                    ) -> dict[str, Any]:
+        """
+        Exports class data into dict.
+
+        Returns:
+            Dict with class data
+
+        """
+        data = super().export_data()
+        data["w"] = self.w
+
+        return data
 
     def generate_keypair(self
-                         ) -> "NaiveKeyPair":
+                         ) -> "WinternitzKeyPair":
         """
         Generates keypair for this algorithm and returns it.
-
 
         Returns:
             Generated keypair
         """
 
-        keypair = NaiveKeyPair(self._hash_name, truncate_to_bytes=self._hash_length_bytes)
+        keypair = WinternitzKeyPair(self._hash_name, truncate_to_bytes=self._hash_length_bytes, w=self.w)
         keypair.generate_keypair()
 
         return keypair
@@ -75,16 +100,18 @@ class NaiveSignature(BaseSignature):
         else:
             message_hash = self.compute_hash(message)
 
-        message_hash_list = message_hash.to_base(2, 256)
+        message_hash_list = message_hash.to_base(self.w, self._l1)
 
-        for m_index, m in enumerate(message_hash_list):
-            signature_bit = private_key.value[m_index].copy()
-            if m == 1:
-                signature_bit = self.compute_hash(signature_bit)
-            signature_data.append(signature_bit)
+        checksum = self.max_sum - sum(message_hash_list)
+
+        checksum_list = self.convert_integer_to_base(checksum, self.w, self._l2)
+
+        for index, i in enumerate(message_hash_list + checksum_list):
+            signature_data.append(self.compute_hashchain(private_key.value[index].copy(), i))
 
         params_dict = {"algorithm": self._hash_name,
-                       "hash_length_bytes": self._hash_length_bytes}
+                       "hash_length_bytes": self._hash_length_bytes,
+                       "w": self.w}
 
         return Signature(signed_hash = message_hash,
                          signature = signature_data,
@@ -129,17 +156,16 @@ class NaiveSignature(BaseSignature):
         else:
             signature_data = signature
 
-        message_hash_list = message_hash.to_base(2,256)
+        message_hash_list = message_hash.to_base(self.w,self._l1)
 
-        for m_index, m in enumerate(message_hash_list):
-            signature_part = signature_data[m_index].copy()
-            if m  == 0:
-                signature_part = self.compute_hash(signature_part)
-            verification_list.append(signature_part)
+        checksum = self.max_sum - sum(message_hash_list)
+
+        checksum_list = self.convert_integer_to_base(checksum, self.w, self._l2)
 
         correct = True
-        for i in range(self._hash_length_bytes*8):
-            if public_key.value[i] != verification_list[i]:
+        for index, i in enumerate(message_hash_list + checksum_list):
+            signature_candidate = self.compute_hashchain(signature_data[index].copy(), self.w - 1 - i)
+            if signature_candidate != public_key.value[index]:
                 correct = False
 
         return correct
@@ -148,7 +174,7 @@ class NaiveSignature(BaseSignature):
                           signature: Union ["Signature", list[bytes]]
                           ) -> bool:
         """
-        Verifies that given Signature value is actually valid Naive signature.
+        Verifies that given Signature value is actually valid signature for this algorithm.
 
         VERIFIES ONLY STRUCTURE OF SIGNATURE, not signature itself.
 
@@ -167,40 +193,61 @@ class NaiveSignature(BaseSignature):
         else:
             signature_data = signature
 
-        if len(signature_data) != self._hash_length_bytes * 8:
+        if len(signature_data) != self._l1 + self._l2:
             return False
 
         for s in signature_data:
             if len(s) != self._hash_length_bytes:
                 return False
 
-
         return True
 
-class NaiveKeyPair(KeyPair):
+class WinternitzKeyPair(KeyPair):
     """
-    Class for Naive signature algorithm keypair.
+    Class for Winternitz signature algorithm keypair.
 
     For algorithm description, see here:
-    https://kryptocheck.cz/podpisy-zalozene-na-hashich-i-zakladni-podpisovy-algoritmus/
+    https://kryptocheck.cz/podpisy-zalozene-na-hashich-iii-uvod-do-winternitzova-jednorazoveho-podpisu/
+    https://kryptocheck.cz/podpisy-zalozene-na-hashich-iv-winternitzuv-podpisovy-algoritmus/
 
     """
 
-    CLASS_NAME = "Naive"
+    CLASS_NAME = "Winternitz"
 
     def __init__(self,
                  hash_name: str | None = None,
-                 truncate_to_bytes: int | None = None
+                 truncate_to_bytes: int | None = None,
+                 w: int = 256
                  ) -> None:
         super().__init__(hash_name, truncate_to_bytes)
+        self.w = w
+
+        # l1 - length of first part of signature (how many parts is signature hash break into)
+        # l2 - length of second part of signature (checksum validation)
+        self._l1 = int(((self._hash_length_bytes * 8 - 1) // log2(self.w)) + 1)
+        self._l2 = int((log2(self._l1 * (self.w - 1)) // log2(self.w)) + 1)
+
+    def export_data(self
+                    ) -> dict[str, Any]:
+        """
+        Exports class data into dict.
+
+        Returns:
+            Dict with class data
+
+        """
+        data = super().export_data()
+        data["w"] = self.w
+
+        return data
 
     def generate_keypair(self
                          ) -> None:
         """
-        Generates private key  as a list of length given by used hash - 1 for each bit of output.
+        Generates private key as a list of length given by values l1 + l2, based on hash length and parameter w.
         Each value is of length given by used hash.
 
-        E.g. for 256-bit hash generates 256 values of length 256(bits) as private key.
+        E.g. for 256-bit hash and w=256 generates 34 values of length 256(bits) as private key.
 
         Also generates public key by independently hashing each private key value.
 
@@ -209,13 +256,14 @@ class NaiveKeyPair(KeyPair):
         private_key_value = []
         public_key_value = []
 
-        for _ in range(self._hash_length_bytes*8):
+        for _ in range(self._l1 +self._l2):
             key_value = self.generate_random(self._hash_length_bytes)
             private_key_value.append(key_value)
-            public_key_value.append(self.compute_hash(key_value.copy()))
+            public_key_value.append(self.compute_hashchain(key_value.copy(), self.w - 1))
 
         params_dict = {"algorithm": self._hash_name,
-                       "hash_length_bytes": self._hash_length_bytes}
+                       "hash_length_bytes": self._hash_length_bytes,
+                       "w": self.w}
 
         self.private_key = Key(is_private=True,
                                algorithm=self.CLASS_NAME,
@@ -250,10 +298,10 @@ class NaiveKeyPair(KeyPair):
         if private_key.is_private + validating_public_key != 1:
             return False
 
-        if private_key.algorithm != "Naive":
+        if private_key.algorithm != "Winternitz":
             return False
 
-        if len(private_key.value) != self._hash_length_bytes * 8:
+        if len(private_key.value) != self._l1 + self._l2:
             return False
 
         for i in private_key.value:

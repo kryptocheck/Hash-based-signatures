@@ -3,9 +3,10 @@ from src.base.TaggedValue import TaggedValue
 
 
 if __name__ == "__main__":
-    # Loading challenge data into algorithm class , keypair class and list of signatures
-    alg, keypair, signatures = load_challenge("02_parameters.json")
+    # Loading challenge data into algorithm class, keypair class and list of signatures
+    alg, keypair, signatures = load_challenge("06_parameters.json")
     forged_message_template = b'48652146|55555555|100|'
+    w = 2
 
     forgery_candidate_hash = []
     forged_signature = None
